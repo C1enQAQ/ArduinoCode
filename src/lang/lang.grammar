@@ -1,0 +1,272 @@
+@precedence {
+  leftArgs @left,
+  lastArgs @left,
+  exponent @right,
+  times @left,
+  plus @left,
+  comparative @left,
+  
+  open @left
+}
+
+@top Program { 
+  (globalStatement | Unrecognized)*
+  Procedure*
+}
+
+@detectDelim
+
+@skip { space | LineComment }
+
+Unrecognized {
+  expression
+}
+
+globalStatement {
+  Extensions { ExtensionStr OpenBracket Extension* CloseBracket } |
+
+  Globals { GlobalStr OpenBracket  Identifier* CloseBracket  } |
+
+  Breed { BreedDeclarative OpenBracket BreedPlural BreedSingular CloseBracket } |
+
+  BreedsOwn {
+    Own OpenBracket Identifier* CloseBracket
+  }
+}
+
+BreedDeclarative {
+  BreedStr | BreedToken
+}
+
+BreedSingular {
+  Identifier | SpecialReporter1Args
+}
+
+BreedPlural {
+  Identifier
+}
+
+BreedVars {
+  Identifier | BreedFirst | BreedMiddle | BreedLast
+}
+
+Procedure {
+  To ProcedureName Arguments? ProcedureContent* End
+}
+
+ProcedureName {
+  Identifier | 
+  SpecialCommand | 
+  SpecialReporter0Args |
+  SpecialReporter1Args |
+  SpecialReporter2Args |
+  SpecialReporter3Args |
+  SpecialReporter4Args |
+  SpecialReporter5Args |
+  SpecialReporter6Args
+}
+
+Arguments {
+  OpenBracket Identifier* ~statement CloseBracket 
+}
+
+ProcedureContent {
+  CommandStatement
+}
+
+AnonArguments {
+  Arguments | Identifier* ~statement
+}
+
+AnonymousProcedure {
+  OpenBracket AnonArguments Arrow ProcedureContent* CloseBracket
+}
+
+VariableDeclaration {
+  NewVariableDeclaration |
+  SetVariable
+}
+
+NewVariableDeclaration {
+  Let Identifier Value
+}
+
+SetVariable {
+  Set VariableName Value
+}
+
+VariableName {
+  !leftArgs Identifier | 
+  PatchVar | 
+  TurtleVar | 
+  LinkVar |
+  BreedToken
+}
+
+Value {
+  Reporters ~statement |
+  String |
+  Constant |
+  VariableName ~statement|
+  List |
+  Numeric |
+  "(" Value ")" |
+  AnonymousProcedure
+}
+
+Literal {
+  Numeric |
+  String |
+  Constant
+}
+
+List {
+  OpenBracket Literal* CloseBracket ~statement
+}
+
+CodeBlock {
+  OpenBracket ProcedureContent* CloseBracket ~statement
+}
+
+ReporterBlock{
+  OpenBracket Reporters CloseBracket
+}
+
+Property {
+  OpenBracket VariableName CloseBracket
+}
+
+Reporters {
+  Reporter | 
+  "(" Reporter Arg+ ")" | 
+  Arg !leftArgs ReporterLeftArgs1 !lastArgs Arg |
+  Arg !leftArgs ReporterLeftArgs2 Arg !lastArgs Arg |
+  SpecialReporter0Args |
+  SpecialReporter1Args !lastArgs Arg |
+  SpecialReporter2Args Arg !lastArgs Arg |
+  SpecialReporter3Args Arg Arg !lastArgs Arg |
+  SpecialReporter4Args Arg Arg Arg !lastArgs Arg |
+  SpecialReporter5Args Arg Arg Arg Arg !lastArgs Arg |
+  SpecialReporter6Args Arg Arg Arg Arg Arg !lastArgs Arg |
+  Reporter0Args |
+  Reporter1Args !lastArgs Arg |
+  Reporter2Args Arg !lastArgs Arg |
+  Reporter3Args Arg Arg !lastArgs Arg |
+  Reporter4Args Arg Arg Arg !lastArgs Arg |
+  Reporter5Args Arg Arg Arg Arg !lastArgs Arg |
+  Reporter6Args Arg Arg Arg Arg Arg !lastArgs Arg |
+  Arg !comparative AndOr Arg
+   
+}
+
+CommandStatement {
+  Command Arg* |
+  VariableDeclaration |
+  SpecialCommand Arg* |
+  Unsupported
+}
+
+Operation {
+  Value !plus PlusMinus Value |
+  Value !times MultiplyDivide Value |
+  Value !exponent Exponent Value |
+  Value !comparative Comparative Value |
+  Value !comparative And Value |
+  Value !comparative Or Value
+}
+
+Arg {  
+  CodeBlock | 
+  Value ~statement |
+  ReporterBlock |
+  Property
+}
+
+@tokens {
+
+  MultiplyDivide {"*" |"/"}
+
+  Exponent {"^"}
+
+  Numeric { $[-]? $[0-9]+ $[\.]? $[0-9]* | $[-]? $[\.] $[0-9]+}
+  
+  String { '"' (!["\\] | "\\" _)* '"' }
+
+  LineComment { ";" ![\n]* }
+
+  space { $[ \t\n\r]+ }
+  
+  OpenBracket { "[" }
+  
+  CloseBracket { "]" }
+
+  Arrow { "->" }
+
+  Comparative { "=" | "!=" | ">" | "<" | "<=" | ">="}
+
+  "[" "]"
+}
+
+expression {
+  "(" expression ")" |
+  Identifier |
+  Command |
+  Reporter |
+  Numeric |
+  String |
+  Constant |
+  TurtleVar |
+  PatchVar |
+  LinkVar |
+  Unsupported
+}
+
+@external tokens keyword from "./tokenizer.js" { 
+  ReporterLeftArgs1,
+  ReporterLeftArgs2,  
+  GlobalStr, 
+  ExtensionStr, 
+  BreedStr, 
+  PlusMinus,
+  Own, 
+  Set, 
+  Let, 
+  To, 
+  End, 
+  And,
+  Or
+  Identifier, 
+  Directive,
+  Command, 
+  Reporter, 
+  Extension, 
+  TurtleVar, 
+  PatchVar, 
+  LinkVar, 
+  Constant, 
+  Unsupported,
+  SpecialReporter,
+  SpecialCommand,
+  BreedToken,
+  AndOr
+}
+
+@external specialize {Reporter} specializeReporter from './specializer' {
+  Reporter0Args,
+  Reporter1Args, 
+  Reporter2Args, 
+  Reporter3Args, 
+  Reporter4Args,
+  Reporter5Args,
+  Reporter6Args
+}
+
+@external specialize {SpecialReporter} specializeSpecialReporter from './specializer' {
+  SpecialReporter0Args,
+  SpecialReporter1Args,
+  SpecialReporter2Args,
+  SpecialReporter3Args,
+  SpecialReporter4Args,
+  SpecialReporter5Args,
+  SpecialReporter6Args
+}
