@@ -8,3 +8,4 @@
 - 为构建语言,用· `lezer-generator ./src/lang/lang.grammar -o ./src/lang/lang.js`.
 - 为构建项目,用 `rollup -c`.
 - Funded by Northwestern SESP Venture Research Fund.
+q'w'q
